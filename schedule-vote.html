@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>피클볼 / 배드민턴 🏸</title>
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-dark: #3730a3;
+    --success: #10b981;
+    --success-light: #d1fae5;
+    --gold: #f59e0b;
+    --gold-light: #fef3c7;
+    --danger: #ef4444;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-800);
+    min-height: 100vh;
+  }
+  #app { max-width: 720px; margin: 0 auto; padding: 20px 16px 80px; }
+
+  /* ── TOP BAR ── */
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .logo-inline { font-size: 1.25rem; font-weight: 800; color: var(--primary); }
+  .user-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 12px 6px 7px;
+    background: white; border: 1.5px solid var(--gray-200);
+    border-radius: 20px; font-size: 0.8125rem; font-weight: 600;
+    color: var(--gray-700); box-shadow: var(--shadow); cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .user-badge:hover { border-color: var(--primary); color: var(--primary); }
+  .avatar {
+    width: 22px; height: 22px; background: var(--primary); color: white;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 0.6875rem; font-weight: 700; flex-shrink: 0;
+  }
+
+  /* ── BEST TIME BANNER ── */
+  .best-banner {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border: 1.5px solid var(--gold);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .best-banner .trophy { font-size: 1.75rem; flex-shrink: 0; }
+  .best-banner-title { font-size: 0.75rem; font-weight: 700; color: #92400e; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; }
+  .best-section { margin-bottom: 2px; }
+  .best-week-label { font-size: 0.7rem; font-weight: 700; color: #a16207; margin-bottom: 4px; letter-spacing: 0.04em; }
+  .best-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+  .best-date { font-size: 0.9rem; font-weight: 700; color: #78350f; }
+  .best-time { font-size: 0.9rem; font-weight: 600; color: #92400e; }
+  .best-count {
+    font-size: 0.75rem; font-weight: 700;
+    background: rgba(0,0,0,0.08); color: #78350f;
+    padding: 1px 7px; border-radius: 10px;
+    position: relative; cursor: default;
+  }
+  .best-count:hover .tooltip { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+  .tooltip {
+    position: absolute; bottom: calc(100% + 7px); left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: #1f2937; color: white;
+    font-size: 0.75rem; font-weight: 500; line-height: 1.5;
+    padding: 7px 11px; border-radius: 8px;
+    white-space: pre; opacity: 0; pointer-events: none;
+    transition: opacity 0.15s, transform 0.15s;
+    z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .tooltip::after {
+    content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    border: 5px solid transparent; border-top-color: #1f2937;
+  }
+  .no-votes-banner {
+    background: var(--gray-100); border: 1.5px dashed var(--gray-300);
+    border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px;
+    text-align: center; color: var(--gray-400); font-size: 0.875rem;
+  }
+
+  /* ── LOADING ── */
+  .loading-banner {
+    background: white; border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px;
+    text-align: center; color: var(--gray-400); font-size: 0.875rem;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid var(--gray-200);
+    border-top-color: var(--primary); border-radius: 50%;
+    animation: spin 0.7s linear infinite; flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── WEEK SECTION ── */
+  .week-section { background: white; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .week-header {
+    padding: 14px 20px; border-bottom: 1px solid var(--gray-100);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .week-title { font-size: 1rem; font-weight: 700; color: var(--gray-800); }
+  .week-date-range { font-size: 0.8125rem; color: var(--gray-400); }
+  .week-locked-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.75rem; font-weight: 600; color: var(--gray-400);
+    background: var(--gray-100); padding: 4px 10px; border-radius: 12px;
+  }
+
+  /* ── GRID ── */
+  .grid-wrap { padding: 16px 20px; overflow-x: auto; }
+  .sched-grid {
+    display: grid;
+    grid-template-columns: 64px repeat(5, 1fr);
+    gap: 5px; min-width: 360px;
+  }
+  .grid-corner { }
+  .col-header {
+    text-align: center; padding: 6px 4px;
+    font-size: 0.75rem; font-weight: 700; color: var(--gray-500); line-height: 1.4;
+  }
+  .col-header .col-date { font-size: 0.9375rem; font-weight: 800; color: var(--gray-700); }
+  .col-header.col-today .col-date { color: var(--primary); }
+  .row-header {
+    display: flex; align-items: center; justify-content: flex-end;
+    padding-right: 10px; font-size: 0.75rem; font-weight: 600;
+    color: var(--gray-500); white-space: nowrap;
+  }
+  .cell {
+    position: relative; border-radius: 8px; border: 2px solid transparent;
+    min-height: 52px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px;
+    cursor: pointer; transition: all 0.15s; background: var(--gray-100); user-select: none;
+  }
+  .cell:hover { transform: scale(1.04); box-shadow: var(--shadow-md); z-index: 1; }
+  .cell.my-yes { border-color: var(--primary); }
+  .cell.is-best { border-color: var(--gold) !important; box-shadow: 0 0 0 1px var(--gold); }
+  .cell.locked { cursor: not-allowed; opacity: 0.5; }
+  .cell.locked:hover { transform: none; box-shadow: none; }
+  .cell-count { font-size: 1rem; font-weight: 800; color: var(--gray-600); line-height: 1; }
+  .cell-names {
+    font-size: 0.6rem; color: var(--gray-400); text-align: center;
+    line-height: 1.3; max-width: 90%; overflow: hidden;
+    white-space: nowrap; text-overflow: ellipsis;
+  }
+  .cell-me { position: absolute; top: 4px; right: 5px; font-size: 0.625rem; font-weight: 700; color: var(--primary); }
+  .cell[data-count="0"] { background: var(--gray-100); }
+  .cell[data-count="1"] { background: #d1fae5; }
+  .cell[data-count="2"] { background: #a7f3d0; }
+  .cell[data-count="3"] { background: #6ee7b7; }
+  .cell[data-count="4"] { background: #34d399; }
+  .cell[data-count="5"] { background: #10b981; }
+  .cell[data-count="6"] { background: #059669; }
+  .cell[data-count="5"] .cell-count,
+  .cell[data-count="6"] .cell-count { color: white; }
+  .cell[data-count="5"] .cell-names,
+  .cell[data-count="6"] .cell-names { color: rgba(255,255,255,0.8); }
+
+  /* Legend */
+  .legend {
+    display: flex; align-items: center; gap: 12px;
+    padding: 0 20px 14px; flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: var(--gray-500); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+  /* ── NAME OVERLAY ── */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px;
+  }
+  .overlay-card {
+    background: white; border-radius: var(--radius); padding: 32px 24px;
+    width: 100%; max-width: 340px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    text-align: center;
+  }
+  .overlay-card h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 6px; }
+  .overlay-card p { font-size: 0.875rem; color: var(--gray-500); margin-bottom: 24px; line-height: 1.6; }
+  .form-group { margin-bottom: 14px; text-align: left; }
+  label { display: block; font-size: 0.875rem; font-weight: 500; color: var(--gray-600); margin-bottom: 5px; }
+  input[type="text"] {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid var(--gray-200); border-radius: 8px;
+    font-size: 0.9375rem; outline: none; transition: border-color 0.15s;
+  }
+  input[type="text"]:focus { border-color: var(--primary); }
+  .btn {
+    padding: 11px 24px; border-radius: 10px; font-size: 0.9375rem; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.15s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .btn-primary { background: var(--primary); color: white; width: 100%; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-sm {
+    padding: 6px 14px; font-size: 0.8125rem; border-radius: 8px;
+    background: var(--gray-100); color: var(--gray-600); border: none; cursor: pointer;
+  }
+  .btn-sm:hover { background: var(--gray-200); }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--gray-800); color: white; padding: 10px 20px; border-radius: 8px;
+    font-size: 0.875rem; font-weight: 500; opacity: 0; transition: opacity 0.2s;
+    pointer-events: none; z-index: 999;
+  }
+  .toast.show { opacity: 1; }
+  .divider { height: 1px; background: var(--gray-100); margin: 0; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<script>
+// ── FIREBASE INIT ───────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyBVQwg6eNnVEL0RQfuXJVOoC1b8qnSW1eY",
+  authDomain: "qcells-badminton.firebaseapp.com",
+  databaseURL: "https://qcells-badminton-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "qcells-badminton",
+  storageBucket: "qcells-badminton.firebasestorage.app",
+  messagingSenderId: "722643667012",
+  appId: "1:722643667012:web:a1b54f2a58683212885411"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ── CONSTANTS ──────────────────────────────────────────────────
+const TIMES = ['오후 7시', '오후 8시', '오후 9시', '오후 10시', '오후 11시'];
+const DOW_KO = ['일','월','화','수','목','금','토'];
+
+// ── UTILS ──────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+
+function weekMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+function getThisMonday() { return weekMonday(new Date()); }
+function getNextMonday() { return addDays(getThisMonday(), 7); }
+function weekDays(monday) { return [0,1,2,3,4].map(i => addDays(monday, i)); }
+function weekId(monday) { return fmtKey(monday); }
+function displayDateRange(monday) {
+  const fri = addDays(monday, 4);
+  return `${monday.getMonth()+1}.${monday.getDate()} – ${fri.getMonth()+1}.${fri.getDate()}`;
+}
+
+// Firebase key: cannot contain . # $ / [ ]
+function sanitizeKey(s) { return s.replace(/[.#$\/\[\]]/g, '_'); }
+
+// ── LOCAL IDENTITY (name stays local — no login needed) ─────────
+function getMyName() { return localStorage.getItem('my_name') || ''; }
+function setMyName(n) { localStorage.setItem('my_name', n.trim()); }
+
+// ── FIREBASE DATA CACHE ────────────────────────────────────────
+// cache[wid] = [{name, slots: {'2026-06-16|오후 7시': true, ...}}]
+const cache = {};
+const subscribedWeeks = new Set();
+
+function getWeekVotes(wid) { return cache[wid] || []; }
+
+function subscribeToWeek(wid) {
+  if (subscribedWeeks.has(wid)) return;
+  subscribedWeeks.add(wid);
+  db.ref('votes/' + wid).on('value', snap => {
+    const val = snap.val();
+    cache[wid] = val
+      ? Object.values(val).map(u => ({ name: u.name || '', slots: u.slots || {} }))
+      : [];
+    render();
+  }, err => {
+    console.error('Firebase read error:', err);
+    showToast('데이터 로드 실패. 네트워크를 확인해주세요.');
+  });
+}
+
+// ── APP STATE ──────────────────────────────────────────────────
+let showOverlay = false;
+let overlayMode = 'setup';
+// Track which weeks have received at least one Firebase response
+const weekReady = {};
+
+// ── RENDER ────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  if (!getMyName() || showOverlay) {
+    app.innerHTML = renderOverlay();
+    document.getElementById('nameInput')?.focus();
+    return;
+  }
+  app.innerHTML = renderMain();
+}
+
+// ── OVERLAY ───────────────────────────────────────────────────
+function renderOverlay() {
+  const isChange = overlayMode === 'change';
+  return `<div class="overlay">
+    <div class="overlay-card">
+      <div style="font-size:2.5rem;margin-bottom:10px">🏸</div>
+      <h2>${isChange ? '이름 변경' : '안녕하세요!'}</h2>
+      <p>${isChange ? '새 닉네임을 입력해주세요.' : '앞으로 모든 투표에서 사용할<br>닉네임을 설정해주세요.'}</p>
+      <div class="form-group">
+        <label>닉네임</label>
+        <input type="text" id="nameInput" value="${esc(getMyName())}" placeholder="예: 김민준" maxlength="16"
+          onkeydown="if(event.key==='Enter')saveName()">
+      </div>
+      <button class="btn btn-primary" onclick="saveName()">
+        ${isChange ? '변경하기' : '시작하기'}
+      </button>
+      ${isChange ? `<div style="margin-top:10px"><button class="btn-sm" onclick="cancelOverlay()">취소</button></div>` : ''}
+    </div>
+  </div>`;
+}
+window.saveName = () => {
+  const v = document.getElementById('nameInput')?.value?.trim();
+  if (!v) { showToast('이름을 입력해주세요!'); return; }
+  setMyName(v);
+  showOverlay = false;
+  render();
+};
+window.cancelOverlay = () => { showOverlay = false; render(); };
+window.openChangeName = () => { overlayMode = 'change'; showOverlay = true; render(); };
+
+// ── BEST TIME ─────────────────────────────────────────────────
+function timeToHour(t) { const n = parseInt(t.match(/\d+/)[0]); return n === 12 ? 12 : n + 12; }
+function hourToStr(h) {
+  if (h >= 24) return '자정';
+  if (h < 12) return `오전 ${h}시`;
+  if (h === 12) return '오후 12시';
+  return `오후 ${h - 12}시`;
+}
+
+function findBestSlots() {
+  const result = {};
+  for (const [label, monday] of [['thisWeek', getThisMonday()], ['nextWeek', getNextMonday()]]) {
+    const wid = weekId(monday);
+    const votes = getWeekVotes(wid);
+    const days = weekDays(monday);
+    const counts = {};
+    for (const day of days) {
+      const dk = fmtKey(day);
+      for (const t of TIMES) {
+        counts[dk+'|'+t] = votes.filter(v => v.slots && v.slots[dk+'|'+t]).length;
+      }
+    }
+    const maxCount = Math.max(0, ...Object.values(counts));
+    if (maxCount === 0) { result[label] = []; continue; }
+
+    const byDay = {};
+    for (const day of days) {
+      const dk = fmtKey(day);
+      for (let ti = 0; ti < TIMES.length; ti++) {
+        if (counts[dk+'|'+TIMES[ti]] === maxCount) {
+          (byDay[dk] = byDay[dk] || { day, indices: [] }).indices.push(ti);
+        }
+      }
+    }
+
+    const items = [];
+    for (const dk of Object.keys(byDay).sort()) {
+      const { day, indices } = byDay[dk];
+      const groups = [];
+      let start = indices[0], end = indices[0];
+      for (let i = 1; i < indices.length; i++) {
+        if (indices[i] === end + 1) end = indices[i];
+        else { groups.push([start, end]); start = end = indices[i]; }
+      }
+      groups.push([start, end]);
+
+      for (const [s, e] of groups) {
+        const dateStr = `${day.getMonth()+1}월 ${day.getDate()}일 (${DOW_KO[day.getDay()]})`;
+        const voterSet = new Set();
+        for (let ti = s; ti <= e; ti++) {
+          votes.filter(v => v.slots && v.slots[fmtKey(day)+'|'+TIMES[ti]]).forEach(v => voterSet.add(v.name));
+        }
+        items.push({
+          dateStr,
+          timeRange: `${hourToStr(timeToHour(TIMES[s]))} – ${hourToStr(timeToHour(TIMES[e])+1)}`,
+          count: maxCount,
+          voters: [...voterSet]
+        });
+      }
+    }
+    result[label] = items;
+  }
+  return result;
+}
+
+function renderBanner() {
+  const thisWid = weekId(getThisMonday());
+  const nextWid = weekId(getNextMonday());
+  // Show loading until both weeks have responded
+  if (!subscribedWeeks.has(thisWid) || !subscribedWeeks.has(nextWid)) {
+    return `<div class="loading-banner"><div class="spinner"></div>투표 데이터 불러오는 중...</div>`;
+  }
+
+  const best = findBestSlots();
+  const hasThis = best.thisWeek.length > 0;
+  const hasNext = best.nextWeek.length > 0;
+  if (!hasThis && !hasNext) {
+    return `<div class="no-votes-banner">아직 투표가 없어요 — 아래에서 가능한 시간을 체크해보세요!</div>`;
+  }
+
+  function renderSection(label, items) {
+    if (!items.length) return '';
+    const rows = items.map(item => `
+      <div class="best-row">
+        <span class="best-date">${item.dateStr}</span>
+        <span class="best-time">${item.timeRange}</span>
+        <span class="best-count">${item.count}명
+          <span class="tooltip">${item.voters.map(n => esc(n)).join('\n')}</span>
+        </span>
+      </div>`).join('');
+    return `<div class="best-section"><div class="best-week-label">${label}</div>${rows}</div>`;
+  }
+
+  return `
+    <div class="best-banner">
+      <div class="trophy">🏆</div>
+      <div style="flex:1;min-width:0">
+        <div class="best-banner-title">최다 투표 일정</div>
+        ${renderSection('이번 주', best.thisWeek)}
+        ${hasThis && hasNext ? '<div style="height:8px"></div>' : ''}
+        ${renderSection('다음 주', best.nextWeek)}
+      </div>
+    </div>`;
+}
+
+// ── WEEK GRID ─────────────────────────────────────────────────
+function renderWeekSection(monday, label, locked) {
+  const myName = getMyName();
+  const wid = weekId(monday);
+  const votes = getWeekVotes(wid);
+  const days = weekDays(monday);
+  const today = fmtKey(new Date());
+
+  let weekBestCount = 0;
+  for (const day of days) {
+    const dk = fmtKey(day);
+    for (const t of TIMES) {
+      const cnt = votes.filter(v => v.slots && v.slots[dk+'|'+t]).length;
+      if (cnt > weekBestCount) weekBestCount = cnt;
+    }
+  }
+
+  const colHeaders = days.map(d => {
+    const dk = fmtKey(d);
+    const isToday = dk === today;
+    return `<div class="col-header${isToday?' col-today':''}">
+      <div class="col-date" style="${isToday?'color:var(--primary)':''}">${d.getDate()}</div>
+      <div>${DOW_KO[d.getDay()]}</div>
+    </div>`;
+  }).join('');
+
+  let cellRows = '';
+  for (const time of TIMES) {
+    let cells = `<div class="row-header">${time.replace('오후 ','')}</div>`;
+    for (const day of days) {
+      const dk = fmtKey(day);
+      const slotKey = dk+'|'+time;
+      const voters = votes.filter(v => v.slots && v.slots[slotKey]).map(v => v.name);
+      const cnt = voters.length;
+      const isMine = voters.includes(myName);
+      const isBest = cnt > 0 && cnt === weekBestCount;
+      const isPast = dk < today;
+      const clsList = ['cell', isMine?'my-yes':'', isBest?'is-best':'', (locked||isPast)?'locked':''].filter(Boolean).join(' ');
+      const cntCap = Math.min(cnt, 6);
+      const onclick = (!locked && !isPast) ? `onclick="toggleSlot('${wid}','${slotKey}')"` : '';
+      cells += `<div class="${clsList}" data-count="${cntCap}" ${onclick}>
+        ${isMine ? `<span class="cell-me">✓</span>` : ''}
+        <span class="cell-count">${cnt > 0 ? cnt : ''}</span>
+        ${voters.length > 0 ? `<span class="cell-names">${esc(voters.join(', '))}</span>` : ''}
+      </div>`;
+    }
+    cellRows += cells;
+  }
+
+  return `
+    <div class="week-section">
+      <div class="week-header">
+        <div>
+          <span class="week-title">${label}</span>
+          <span class="week-date-range" style="margin-left:8px">${displayDateRange(monday)}</span>
+        </div>
+        ${locked ? `<span class="week-locked-badge">🔒 이번 주 월요일부터 오픈</span>` : ''}
+      </div>
+      <div class="grid-wrap">
+        <div class="sched-grid">
+          <div class="grid-corner"></div>
+          ${colHeaders}
+          ${cellRows}
+        </div>
+      </div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-dot" style="background:var(--gray-200)"></span>0명</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#a7f3d0"></span>1-2명</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#34d399"></span>3-4명</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#059669"></span>5명+</span>
+        <span class="legend-item" style="margin-left:4px">
+          <span style="border:2px solid var(--primary);border-radius:4px;width:12px;height:12px;display:inline-block"></span>내 투표
+        </span>
+        <span class="legend-item">
+          <span style="border:2px solid var(--gold);border-radius:4px;width:12px;height:12px;display:inline-block;background:var(--gold-light)"></span>최다
+        </span>
+      </div>
+    </div>`;
+}
+
+// ── MAIN ──────────────────────────────────────────────────────
+function renderMain() {
+  const myName = getMyName();
+  const initial = myName.charAt(0).toUpperCase();
+  const thisM = getThisMonday();
+  const nextM = getNextMonday();
+  const nextLocked = new Date() < getThisMonday();
+
+  return `
+    <div class="top-bar">
+      <div class="logo-inline">피클볼 / 배드민턴 🏸</div>
+      <div class="user-badge" onclick="openChangeName()">
+        <div class="avatar">${esc(initial)}</div>
+        ${esc(myName)}
+        <span style="font-size:0.7rem;color:var(--gray-400);margin-left:2px">✏️</span>
+      </div>
+    </div>
+    ${renderBanner()}
+    ${renderWeekSection(thisM, '이번 주', false)}
+    ${renderWeekSection(nextM, '다음 주', nextLocked)}
+  `;
+}
+
+// ── TOGGLE SLOT (Firebase write) ──────────────────────────────
+window.toggleSlot = (wid, slotKey) => {
+  const myName = getMyName();
+  const userKey = sanitizeKey(myName);
+  const userRef = db.ref(`votes/${wid}/${userKey}`);
+
+  userRef.once('value', snap => {
+    const current = snap.val();
+    const currentlyOn = current?.slots?.[slotKey] === true;
+    if (currentlyOn) {
+      // Turn off: remove this slot
+      db.ref(`votes/${wid}/${userKey}/slots/${slotKey}`).remove();
+    } else {
+      // Turn on: set name + slot
+      db.ref().update({
+        [`votes/${wid}/${userKey}/name`]: myName,
+        [`votes/${wid}/${userKey}/slots/${slotKey}`]: true
+      });
+    }
+  });
+};
+
+// ── INIT ──────────────────────────────────────────────────────
+// Subscribe to this week + next week data on load
+subscribeToWeek(weekId(getThisMonday()));
+subscribeToWeek(weekId(getNextMonday()));
+render();
+</script>
+</body>
+</html>
