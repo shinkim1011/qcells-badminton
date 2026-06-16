@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>피클볼 / 배드민턴 🏸</title>
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --primary: #0047D4;
+    --primary-light: #deeeff;
+    --primary-dark: #002FA0;
+    --success: #10b981;
+    --success-light: #d1fae5;
+    --gold: #f59e0b;
+    --gold-light: #fef3c7;
+    --danger: #ef4444;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: var(--gray-50);
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyODAiIGhlaWdodD0iMjgwIj4KICA8ZGVmcz4KICAgIDxzeW1ib2wgaWQ9InNjIiB2aWV3Qm94PSIwIDAgNjggODUiPjxwYXRoIGQ9Ik02My45NjY4ODA4LDMwLjM0MzA0NjJjLTEuMzI2MDQ5OC0xLjMyODA2NC0zLjIwNTAxNzEtMi4wMTQxNjAyLTUuMDc1ODA1Ny0xLjk4MjU0MzljMS4yODMxNDIxLTIuNzkyNDgwNSwwLjc4NTk0OTctNi4yMDcxNTMzLTEuNTAzMjk1OS04LjQ4NzE4MjZjLTEuODg2NTU4NS0xLjg5NDMzNDgtNC42Mjc0NDktMi42NzAyODA1LTcuMzA2ODg0OC0xLjk0NDcwMjFjMC4xNzMwOTU3LTAuNjM5NTI2NCwwLjI2OTQ3MDItMS4zMDM3NzIsMC4yNjg3OTg4LTEuOTg0MDA4OGMtMC4wMDA5NzY2LTIuMDExNzE4OC0wLjc4ODA4NTktMy45MDIzNDM4LTIuMjExOTE0MS01LjMyMTI4OTFjLTIuMjAzNjk3Mi0yLjIxMjgxMDUtNS41NDUxODg5LTIuODU0Njk1My04LjQ4MzcwMzYtMS40OTY3NjUxYzAuMDg0MTcxMy0yLjgyNzgwNzQtMS41Mjg3ODk1LTUuMzE1NzI0OC0zLjg2Nzg1ODktNi40MjYwODY0Yy0zLjU4MTYzNDUtMS43Mzk3NTU2LTcuODk1MDUtMC4xMzUyMTkxLTkuNDI2NzU1OSwzLjU0MDAzODhMMTIuMjk0MDkyMiwzOS41MzE0NTk4Yy0wLjEwMDI2MDcsMC4xMDAyNzY5LTcuMDMwNzMxMiw3LjAzMTcyMy02LjkzMDcyNTEsNi45MzE3MDE3Yy00LjQ4NDAzMzYsNC40ODIwMDk5LTQuNDY1MjU2MiwxMS43MTgzMzgsMCwxNi4xODM1OTM4YzQuNDY1NzEzNSw0LjQ2NTcxNzMsMTEuNzEwMjI0Miw0LjQ4MzEzNTIsMTYuMTkzMzU5NCwwYzAuMTAwMDkzOC0wLjEwMDIyNzQsNy40MzExMzUyLTcuNDQxMjI3LDYuOTY0NzgyNy02Ljk3NDI0MzJMNjEuNzQ1MjAxMSw0MS42NDI4NDlDNjYuMjcyNTkwNiwzOS43NTM3MjcsNjcuNDQ3NTcwOCwzMy44MTc1MzU0LDYzLjk2Njg4MDgsMzAuMzQzMDQ2MnogTTIwLjE0MjY2NCw2MS4yMzI2OTI3Yy0zLjY4NTUyNCwzLjY4NTUyNzgtOS42NjU3MzYyLDMuNjk5NDk3Mi0xMy4zNjUyMzQ0LDBjLTMuNjgzMzA0OC0zLjY4MzMwMzgtMy43MDI1NTIzLTkuNjU0OTQxNiwwLTEzLjM1NTQ2ODhsMi41NjI1LTIuNTYzNDc2NkwyMi43MDUxNjQsNTguNjcwMTkyN0wyMC4xNDI2NjQsNjEuMjMyNjkyN3ogTTU1Ljk3MzcxNjcsMjEuMjg3MzgyMWMyLjA5MzA3NDgsMi4wODUzMjcxLDIuNDg5NDc1Myw2LjExNDExNDgtMC43ODAyNzM0LDguMTkxNDA2M0wyNC41MDU5NDUyLDUwLjA0MTI4NjVsLTIuNTYxNTIzNC0yLjU2MTUyMzRsMjYuMTkyMzgwOS0yNi4xOTMzNTc1QzUwLjMwNjUzNzYsMTkuMTE4Njg4Niw1My44MDYzNTA3LDE5LjExMTkyNyw1NS45NzM3MTY3LDIxLjI4NzM4MjF6IE00Ni43MjM3MTY3LDEyLjAzNzM4MjFjMS4wNDc4NTE2LDEuMDQzOTQ1MywxLjYyNSwyLjQzMTY0MDYsMS42MjU5NzY2LDMuOTA5MTc5N2MwLjAwMTk1MzEsMS40ODE0NDUzLTAuNTc2MTcxOSwyLjg3NS0xLjYyNjk1MzEsMy45MjU3ODEzbC0yNi4xOTMzNTc1LDI2LjE5NDMzNGwtMi41ODAwNzgxLTIuNTc0MjE4OGwyMC41NjE1MjE1LTMwLjY5NjI4NzJDNDAuNjIyNzQ1NSw5LjYzNDE1NDMsNDQuNTU3MTMyNyw5Ljg2MjY3MjgsNDYuNzIzNzE2NywxMi4wMzczODIxeiBNMjguMjAzMjEwOCw3LjAxNDkyMDdjMS4wODIwMjkzLTIuNTkyNDQ2OCw0LjEzMjE2MjEtMy43Njc1MjkyLDYuNzE2Nzk1LTIuNTExNzE4OGMyLjY2MTA4MzIsMS4yNjMxNzE3LDMuNTc1MzcwOCw0LjcyMTgxMDgsMS45Mjg3MTA5LDcuMTc5Njg4TDE2LjUwNjQzMzUsNDIuMDUxNTQwNGwtMi4xODMxMDU1LTIuMTgzMTA1NUwyOC4yMDMyMTA4LDcuMDE0OTIwN3ogTTI0LjExOTIyNjUsNTcuMjU1MTUzN2MtMC4xMTE4MjQtMC4xMTE3NDc3LTEzLjI0NDE3NS0xMy4yMzUzNDM5LTEzLjM2NDgwNzEtMTMuMzU1ODk2bDIuMzg1MDcwOC0yLjM4NTA3MDhjMC41OTg0OTkzLDAuNTk4MzM5MSwzLjM2NjA0MzEsMy4zNjYzMzMsMTMuMzU3NjY2LDEzLjM1NjIwMTJMMjQuMTE5MjI2NSw1Ny4yNTUxNTM3eiBNNjAuOTcxNzYzNiwzOS43OTkwOTlMMjguMTMxOTIxOCw1My42NjYyODY1bC0yLjE4NDUwOTMtMi4xODM1MzI3bDMwLjMzODgwNDItMjAuMzI5MTYwN2MyLjEzNTU4NTgtMS4zNDk1NzEyLDQuNzIxMzAyLTAuOTQwNjY2Miw2LjI2NzU3ODEsMC42MDQ0OTIyQzY1LjAzODIwOCwzNC4yMzYyOTc2LDY0LjE4NzM1NSwzOC40NTYzNTIyLDYwLjk3MTc2MzYsMzkuNzk5MDk5eiIvPjwvc3ltYm9sPgogICAgPHN5bWJvbCBpZD0icGIiIHZpZXdCb3g9Ii0xLjYgLTMuMiAzNS4yIDQzLjIiPjxwYXRoIGQ9Ik0xMC4wMiwxMi41NmMuMDQtNS4xNyw0LjI4LTkuNjUsOS44NS05LjU2LDUuMjksLjA5LDkuNTEsNC4zMiw5LjUyLDkuNjgsMCw1LjQ0LTQuMzQsOS43My05Ljg1LDkuNjgtNS4zMS0uMDUtOS41OC00LjQzLTkuNTItOS44Wm02LjA0LDEuMzRjLjY4LDAsMS4yMi0uNTMsMS4yMy0xLjIsMC0uNjctLjU0LTEuMjItMS4yMS0xLjIzLS42NywwLTEuMjIsLjU0LTEuMjMsMS4yMSwwLC42NywuNTQsMS4yMiwxLjIxLDEuMjJabTQuODctNC44NWMwLS42Ny0uNTUtMS4yMi0xLjIyLTEuMjItLjY4LDAtMS4yMiwuNTQtMS4yMiwxLjIyLDAsLjY3LC41NSwxLjIyLDEuMjIsMS4yMiwuNjYsMCwxLjIyLS41NiwxLjIyLTEuMjJabTIuNDMsNC44NWMuNjcsMCwxLjIyLS41NSwxLjIxLTEuMjIsMC0uNjYtLjU3LTEuMjItMS4yMy0xLjIxLS42NywwLTEuMjEsLjU2LTEuMjEsMS4yMywwLC42OCwuNTUsMS4yMSwxLjIyLDEuMlptLTIuNDMsMi40M2MwLS42Ny0uNTUtMS4yMi0xLjIyLTEuMjEtLjY3LDAtMS4yMSwuNTUtMS4yMSwxLjIyLDAsLjY3LC41NSwxLjIyLDEuMjIsMS4yMSwuNjcsMCwxLjIyLS41NSwxLjIxLTEuMjJabTEuNzMtOS41Yy4zOCwwLC42Ny0uMSwuODQtLjQsLjE3LS4zLC4xMS0uNi0uMDctLjg4LS4yOS0uNDYtLjczLS43MS0xLjI3LS43NC0uMzItLjAyLS42MiwuMDktLjgsLjM4LS4xNywuMjktLjEyLC41OCwuMDQsLjg2LC4yOSwuNDksLjc0LC43MywxLjI2LC43N1ptLjA2LDExLjdjLS41OSwwLTEuMTcsLjM4LTEuMzksLjkxLS4yMSwuNTIsLjA1LC45OSwuNiwxLjA4LC41NSwuMSwxLjE4LS4yLDEuNDktLjcxLC4xNy0uMjgsLjI1LS41OCwuMDgtLjg4LS4xNy0uMy0uNDYtLjQtLjc5LS40Wm0yLjg0LTIuOTdjLS4wMSwuNzksLjUsMS4xOCwxLjExLC45MywuNTEtLjIxLC45Mi0uODQsLjkxLTEuMzktLjAyLS43NC0uNjUtMS4wOS0xLjI4LS43LS40NywuMjktLjcxLC43Mi0uNzQsMS4xN1ptMC01LjgxYy4wMywuNTIsLjMsMSwuODcsMS4yOCwuNTMsLjI2LDEuMDMtLjAxLDEuMTMtLjU5LC4xLS41Ni0uMjQtMS4yMi0uNzctMS41MS0uNjMtLjM0LTEuMjIsMC0xLjIzLC44MlptLTguNzYsOC43OGMtLjg0LDAtMS4yLC42Mi0uODMsMS4yNCwuMjgsLjQ4LC43MywuNzQsMS4yOCwuNzcsLjMzLC4wMiwuNjQtLjA5LC44MS0uNCwuMTYtLjMsLjEtLjYtLjA4LS44OC0uMy0uNDctLjc0LS43MS0xLjE5LS43M1ptLS4xMS0xMS43Yy41NywwLDEuMTUtLjM3LDEuMzgtLjg4LC4yMi0uNSwwLS45Ny0uNTMtMS4xLS41NC0uMTQtMS4yNywuMi0xLjU4LC43NC0uMzYsLjYzLDAsMS4yNCwuNzMsMS4yNFptLTIuODMsMi45YzAtLjM3LS4xLS42Ny0uNDEtLjg0LS4zLS4xNy0uNjEtLjEtLjg4LC4wOC0uNDksLjMyLS43MywuNzgtLjcyLDEuMzYsLjAxLC42NSwuNTksLjk5LDEuMTcsLjcsLjUzLS4yNywuNzgtLjc0LC44NC0xLjI5Wm0wLDUuOTljMC0uNjEtLjQtMS4yMS0uOTQtMS40MS0uNS0uMTgtLjk1LC4wNy0xLjA0LC41OS0uMTEsLjU5LC4yNCwxLjI3LC43OCwxLjU2LC42MiwuMzIsMS4yLS4wMywxLjItLjczWiIvPjwvc3ltYm9sPgogICAgPHBhdHRlcm4gaWQ9InBhdCIgeD0iMCIgeT0iMCIgd2lkdGg9IjI4MCIgaGVpZ2h0PSIyODAiCiAgICAgIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiCiAgICAgIHBhdHRlcm5UcmFuc2Zvcm09InJvdGF0ZSgyMCAxNDAgMTQwKSI+CiAgICAgIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDcwLDcwKSByb3RhdGUoMTIpIiBvcGFjaXR5PSIwLjE1IiBmaWxsPSIjNWE3YWEwIj4KICAgICAgICA8dXNlIGhyZWY9IiNzYyIgeD0iLTI4IiB5PSItMzUiIHdpZHRoPSI1NiIgaGVpZ2h0PSI3MCIvPgogICAgICA8L2c+CiAgICAgIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDIxMCw3MCkgcm90YXRlKC0zNSkiIG9wYWNpdHk9IjAuMTUiIGZpbGw9IiM1YTdhYTAiPgogICAgICAgIDx1c2UgaHJlZj0iI3BiIiB4PSItMjgiIHk9Ii0zNCIgd2lkdGg9IjU2IiBoZWlnaHQ9IjY5Ii8+CiAgICAgIDwvZz4KICAgICAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNzAsMjEwKSByb3RhdGUoNjUpIiBvcGFjaXR5PSIwLjE1IiBmaWxsPSIjNWE3YWEwIj4KICAgICAgICA8dXNlIGhyZWY9IiNwYiIgeD0iLTI4IiB5PSItMzQiIHdpZHRoPSI1NiIgaGVpZ2h0PSI2OSIvPgogICAgICA8L2c+CiAgICAgIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDIxMCwyMTApIHJvdGF0ZSgtMzUpIiBvcGFjaXR5PSIwLjE1IiBmaWxsPSIjNWE3YWEwIj4KICAgICAgICA8dXNlIGhyZWY9IiNzYyIgeD0iLTI4IiB5PSItMzUiIHdpZHRoPSI1NiIgaGVpZ2h0PSI3MCIvPgogICAgICA8L2c+CiAgICA8L3BhdHRlcm4+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIyODAiIGhlaWdodD0iMjgwIiBmaWxsPSJ1cmwoI3BhdCkiLz4KPC9zdmc+");
+    background-repeat: repeat;
+    background-size: 280px 280px;
+    color: var(--gray-800);
+    min-height: 100vh;
+  }
+  #app { max-width: 720px; margin: 0 auto; padding: 20px 16px 80px; }
+
+  /* ── TOP BAR ── */
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .logo-inline { font-size: 1.25rem; font-weight: 800; color: var(--primary); }
+  .user-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 12px 6px 7px;
+    background: white; border: 1.5px solid var(--gray-200);
+    border-radius: 20px; font-size: 0.8125rem; font-weight: 600;
+    color: var(--gray-700); box-shadow: var(--shadow); cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .user-badge:hover { border-color: var(--primary); color: var(--primary); }
+  .avatar {
+    width: 22px; height: 22px; background: var(--primary); color: white;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 0.6875rem; font-weight: 700; flex-shrink: 0;
+  }
+
+  /* ── BEST TIME BANNER ── */
+  .best-banner {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border: 1.5px solid var(--gold);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .best-banner .trophy { font-size: 1.75rem; flex-shrink: 0; }
+  .best-banner-title { font-size: 0.75rem; font-weight: 700; color: #92400e; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; }
+  .best-section { margin-bottom: 2px; }
+  .best-week-label { font-size: 0.7rem; font-weight: 700; color: #a16207; margin-bottom: 4px; letter-spacing: 0.04em; }
+  .best-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+  .best-date { font-size: 0.9rem; font-weight: 700; color: #78350f; }
+  .best-time { font-size: 0.9rem; font-weight: 600; color: #92400e; }
+  .best-count {
+    font-size: 0.75rem; font-weight: 700;
+    background: rgba(0,0,0,0.08); color: #78350f;
+    padding: 1px 7px; border-radius: 10px;
+    position: relative; cursor: default;
+  }
+  .best-count:hover .tooltip { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+  .tooltip {
+    position: absolute; bottom: calc(100% + 7px); left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: #1f2937; color: white;
+    font-size: 0.75rem; font-weight: 500; line-height: 1.5;
+    padding: 7px 11px; border-radius: 8px;
+    white-space: pre; opacity: 0; pointer-events: none;
+    transition: opacity 0.15s, transform 0.15s;
+    z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .tooltip::after {
+    content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    border: 5px solid transparent; border-top-color: #1f2937;
+  }
+  .no-votes-banner {
+    background: var(--gray-100); border: 1.5px dashed var(--gray-300);
+    border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px;
+    text-align: center; color: var(--gray-400); font-size: 0.875rem;
+  }
+
+  /* ── LOADING ── */
+  .loading-banner {
+    background: white; border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px;
+    text-align: center; color: var(--gray-400); font-size: 0.875rem;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid var(--gray-200);
+    border-top-color: var(--primary); border-radius: 50%;
+    animation: spin 0.7s linear infinite; flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── WEEK SECTION ── */
+  .week-section { background: white; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .week-header {
+    padding: 14px 20px; border-bottom: 1px solid var(--gray-100);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .week-title { font-size: 1rem; font-weight: 700; color: var(--gray-800); }
+  .week-date-range { font-size: 0.8125rem; color: var(--gray-400); }
+  .week-locked-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.75rem; font-weight: 600; color: var(--gray-400);
+    background: var(--gray-100); padding: 4px 10px; border-radius: 12px;
+  }
+
+  /* ── GRID ── */
+  .grid-wrap { padding: 16px 20px; overflow-x: auto; }
+  .sched-grid {
+    display: grid;
+    grid-template-columns: 88px repeat(5, 1fr);
+    gap: 5px; min-width: 360px;
+  }
+  .grid-corner { }
+  .col-header {
+    text-align: center; padding: 6px 4px;
+    font-size: 0.75rem; font-weight: 700; color: var(--gray-500); line-height: 1.4;
+  }
+  .col-header .col-date { font-size: 0.9375rem; font-weight: 800; color: var(--gray-700); }
+  .col-header.col-today .col-date { color: var(--primary); }
+  .row-header {
+    display: flex; align-items: center; justify-content: flex-start;
+    padding-left: 4px; font-size: 0.75rem; font-weight: 600;
+    color: var(--gray-500); white-space: nowrap;
+  }
+  .cell {
+    position: relative; border-radius: 8px; border: 2px solid transparent;
+    min-height: 52px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px;
+    cursor: pointer; transition: all 0.15s; background: var(--gray-100); user-select: none;
+  }
+  .cell:hover { transform: scale(1.04); box-shadow: var(--shadow-md); z-index: 1; }
+  .cell.my-yes { border-color: var(--primary); }
+  .cell.is-best { border-color: var(--gold) !important; box-shadow: 0 0 0 1px var(--gold); }
+  .cell.locked { cursor: not-allowed; opacity: 0.5; }
+  .cell.locked:hover { transform: none; box-shadow: none; }
+  .cell-count { font-size: 1rem; font-weight: 800; color: var(--gray-600); line-height: 1; }
+  .cell-names {
+    font-size: 0.6rem; color: var(--gray-400); text-align: center;
+    line-height: 1.3; max-width: 90%; overflow: hidden;
+    white-space: nowrap; text-overflow: ellipsis;
+  }
+  .cell-me { position: absolute; top: 4px; right: 5px; font-size: 0.625rem; font-weight: 700; color: var(--primary); }
+  .cell[data-count="0"] { background: var(--gray-100); }
+  .cell[data-count="1"] { background: #ccfff4; }
+  .cell[data-count="2"] { background: #7aeed8; }
+  .cell[data-count="3"] { background: #00c8b4; }
+  .cell[data-count="4"] { background: #0099d4; }
+  .cell[data-count="5"] { background: #0055bb; }
+  .cell[data-count="6"] { background: #002fa0; }
+  .cell[data-count="3"] .cell-count,
+  .cell[data-count="4"] .cell-count,
+  .cell[data-count="5"] .cell-count,
+  .cell[data-count="6"] .cell-count { color: white; }
+  .cell[data-count="3"] .cell-names,
+  .cell[data-count="4"] .cell-names,
+  .cell[data-count="5"] .cell-names,
+  .cell[data-count="6"] .cell-names { color: rgba(255,255,255,0.85); }
+
+  /* Legend */
+  .legend {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    padding: 0 20px 14px 108px; flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: var(--gray-500); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+  /* ── NAME OVERLAY ── */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px;
+  }
+  .overlay-card {
+    background: white; border-radius: var(--radius); padding: 32px 24px;
+    width: 100%; max-width: 340px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    text-align: center;
+  }
+  .overlay-card h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 6px; }
+  .overlay-card p { font-size: 0.875rem; color: var(--gray-500); margin-bottom: 24px; line-height: 1.6; }
+  .form-group { margin-bottom: 14px; text-align: left; }
+  label { display: block; font-size: 0.875rem; font-weight: 500; color: var(--gray-600); margin-bottom: 5px; }
+  input[type="text"] {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid var(--gray-200); border-radius: 8px;
+    font-size: 0.9375rem; outline: none; transition: border-color 0.15s;
+  }
+  input[type="text"]:focus { border-color: var(--primary); }
+  .btn {
+    padding: 11px 24px; border-radius: 10px; font-size: 0.9375rem; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.15s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .btn-primary { background: var(--primary); color: white; width: 100%; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-sm {
+    padding: 6px 14px; font-size: 0.8125rem; border-radius: 8px;
+    background: var(--gray-100); color: var(--gray-600); border: none; cursor: pointer;
+  }
+  .btn-sm:hover { background: var(--gray-200); }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--gray-800); color: white; padding: 10px 20px; border-radius: 8px;
+    font-size: 0.875rem; font-weight: 500; opacity: 0; transition: opacity 0.2s;
+    pointer-events: none; z-index: 999;
+  }
+  .toast.show { opacity: 1; }
+  .divider { height: 1px; background: var(--gray-100); margin: 0; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<script>
+// ── FIREBASE INIT ───────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyBVQwg6eNnVEL0RQfuXJVOoC1b8qnSW1eY",
+  authDomain: "qcells-badminton.firebaseapp.com",
+  databaseURL: "https://qcells-badminton-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "qcells-badminton",
+  storageBucket: "qcells-badminton.firebasestorage.app",
+  messagingSenderId: "722643667012",
+  appId: "1:722643667012:web:a1b54f2a58683212885411"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ── CONSTANTS ──────────────────────────────────────────────────
+const TIMES = ['6 PM – 7 PM', '7 PM – 8 PM', '8 PM – 9 PM', '9 PM – 10 PM', '10 PM – 11 PM'];
+const TIME_START_HOURS = [18, 19, 20, 21, 22];
+const DOW_KO = ['일','월','화','수','목','금','토'];
+
+// ── UTILS ──────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+
+function weekMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+function getThisMonday() { return weekMonday(new Date()); }
+function getNextMonday() { return addDays(getThisMonday(), 7); }
+function weekDays(monday) { return [0,1,2,3,4].map(i => addDays(monday, i)); }
+function weekId(monday) { return fmtKey(monday); }
+function displayDateRange(monday) {
+  const fri = addDays(monday, 4);
+  return `${monday.getMonth()+1}.${monday.getDate()} – ${fri.getMonth()+1}.${fri.getDate()}`;
+}
+
+// Firebase key: cannot contain . # $ / [ ]
+function sanitizeKey(s) { return s.replace(/[.#$\/\[\]]/g, '_'); }
+
+// ── LOCAL IDENTITY (name stays local — no login needed) ─────────
+function getMyName() { return localStorage.getItem('my_name') || ''; }
+function setMyName(n) { localStorage.setItem('my_name', n.trim()); }
+
+// ── FIREBASE DATA CACHE ────────────────────────────────────────
+// cache[wid] = [{name, slots: {'2026-06-16|오후 7시': true, ...}}]
+const cache = {};
+const subscribedWeeks = new Set();
+
+function getWeekVotes(wid) { return cache[wid] || []; }
+
+function subscribeToWeek(wid) {
+  if (subscribedWeeks.has(wid)) return;
+  subscribedWeeks.add(wid);
+  db.ref('votes/' + wid).on('value', snap => {
+    const val = snap.val();
+    cache[wid] = val
+      ? Object.values(val).map(u => ({ name: u.name || '', slots: u.slots || {} }))
+      : [];
+    render();
+  }, err => {
+    console.error('Firebase read error:', err);
+    showToast('데이터 로드 실패. 네트워크를 확인해주세요.');
+  });
+}
+
+// ── APP STATE ──────────────────────────────────────────────────
+let showOverlay = false;
+let overlayMode = 'setup';
+// Track which weeks have received at least one Firebase response
+const weekReady = {};
+
+// ── RENDER ────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  if (!getMyName() || showOverlay) {
+    app.innerHTML = renderOverlay();
+    document.getElementById('nameInput')?.focus();
+    return;
+  }
+  app.innerHTML = renderMain();
+}
+
+// ── OVERLAY ───────────────────────────────────────────────────
+function renderOverlay() {
+  const isChange = overlayMode === 'change';
+  return `<div class="overlay">
+    <div class="overlay-card">
+      <div style="font-size:2.5rem;margin-bottom:10px">🏸</div>
+      <h2>${isChange ? '이름 변경' : '안녕하세요!'}</h2>
+      <p>${isChange ? '새 닉네임을 입력해주세요.' : '앞으로 모든 투표에서 사용할<br>닉네임을 설정해주세요.'}</p>
+      <div class="form-group">
+        <label>닉네임</label>
+        <input type="text" id="nameInput" value="${esc(getMyName())}" placeholder="예: 김큐셀" maxlength="16"
+          onkeydown="if(event.key==='Enter')saveName()">
+      </div>
+      <button class="btn btn-primary" onclick="saveName()">
+        ${isChange ? '변경하기' : '시작하기'}
+      </button>
+      ${isChange ? `<div style="margin-top:10px"><button class="btn-sm" onclick="cancelOverlay()">취소</button></div>` : ''}
+    </div>
+  </div>`;
+}
+window.saveName = () => {
+  const v = document.getElementById('nameInput')?.value?.trim();
+  if (!v) { showToast('이름을 입력해주세요!'); return; }
+  setMyName(v);
+  showOverlay = false;
+  render();
+};
+window.cancelOverlay = () => { showOverlay = false; render(); };
+window.openChangeName = () => { overlayMode = 'change'; showOverlay = true; render(); };
+
+// ── BEST TIME ─────────────────────────────────────────────────
+function hourToAmPm(h) {
+  if (h >= 24) return '12AM';
+  if (h === 12) return '12PM';
+  return h < 12 ? `${h}AM` : `${h-12}PM`;
+}
+
+function findBestSlots() {
+  const result = {};
+  for (const [label, monday] of [['thisWeek', getThisMonday()], ['nextWeek', getNextMonday()]]) {
+    const wid = weekId(monday);
+    const votes = getWeekVotes(wid);
+    const days = weekDays(monday);
+    const counts = {};
+    for (const day of days) {
+      const dk = fmtKey(day);
+      for (const t of TIMES) {
+        counts[dk+'|'+t] = votes.filter(v => v.slots && v.slots[dk+'|'+t]).length;
+      }
+    }
+    const maxCount = Math.max(0, ...Object.values(counts));
+    if (maxCount === 0) { result[label] = []; continue; }
+
+    const byDay = {};
+    for (const day of days) {
+      const dk = fmtKey(day);
+      for (let ti = 0; ti < TIMES.length; ti++) {
+        if (counts[dk+'|'+TIMES[ti]] === maxCount) {
+          (byDay[dk] = byDay[dk] || { day, indices: [] }).indices.push(ti);
+        }
+      }
+    }
+
+    const items = [];
+    for (const dk of Object.keys(byDay).sort()) {
+      const { day, indices } = byDay[dk];
+      const groups = [];
+      let start = indices[0], end = indices[0];
+      for (let i = 1; i < indices.length; i++) {
+        if (indices[i] === end + 1) end = indices[i];
+        else { groups.push([start, end]); start = end = indices[i]; }
+      }
+      groups.push([start, end]);
+
+      for (const [s, e] of groups) {
+        const dateStr = `${day.getMonth()+1}월 ${day.getDate()}일 (${DOW_KO[day.getDay()]})`;
+        const voterSet = new Set();
+        for (let ti = s; ti <= e; ti++) {
+          votes.filter(v => v.slots && v.slots[fmtKey(day)+'|'+TIMES[ti]]).forEach(v => voterSet.add(v.name));
+        }
+        items.push({
+          dateStr,
+          timeRange: `${hourToAmPm(TIME_START_HOURS[s])} – ${hourToAmPm(TIME_START_HOURS[e]+1)}`,
+          count: maxCount,
+          voters: [...voterSet]
+        });
+      }
+    }
+    result[label] = items;
+  }
+  return result;
+}
+
+function renderBanner() {
+  const thisWid = weekId(getThisMonday());
+  const nextWid = weekId(getNextMonday());
+  // Show loading until both weeks have responded
+  if (!subscribedWeeks.has(thisWid) || !subscribedWeeks.has(nextWid)) {
+    return `<div class="loading-banner"><div class="spinner"></div>투표 데이터 불러오는 중...</div>`;
+  }
+
+  const best = findBestSlots();
+  const hasThis = best.thisWeek.length > 0;
+  const hasNext = best.nextWeek.length > 0;
+  if (!hasThis && !hasNext) {
+    return `<div class="no-votes-banner">아직 투표가 없어요 — 아래에서 가능한 시간을 체크해보세요!</div>`;
+  }
+
+  function renderSection(label, items) {
+    if (!items.length) return '';
+    const rows = items.map(item => `
+      <div class="best-row">
+        <span class="best-date">${item.dateStr}</span>
+        <span class="best-time">${item.timeRange}</span>
+        <span class="best-count">${item.count}명
+          <span class="tooltip">${item.voters.map(n => esc(n)).join('\n')}</span>
+        </span>
+      </div>`).join('');
+    return `<div class="best-section"><div class="best-week-label">${label}</div>${rows}</div>`;
+  }
+
+  return `
+    <div class="best-banner">
+      <div class="trophy">🏆</div>
+      <div style="flex:1;min-width:0">
+        <div class="best-banner-title">최다 투표 일정</div>
+        ${renderSection('이번 주', best.thisWeek)}
+        ${hasThis && hasNext ? '<div style="height:8px"></div>' : ''}
+        ${renderSection('다음 주', best.nextWeek)}
+      </div>
+    </div>`;
+}
+
+// ── WEEK GRID ─────────────────────────────────────────────────
+function renderWeekSection(monday, label, locked) {
+  const myName = getMyName();
+  const wid = weekId(monday);
+  const votes = getWeekVotes(wid);
+  const days = weekDays(monday);
+  const today = fmtKey(new Date());
+
+  let weekBestCount = 0;
+  for (const day of days) {
+    const dk = fmtKey(day);
+    for (const t of TIMES) {
+      const cnt = votes.filter(v => v.slots && v.slots[dk+'|'+t]).length;
+      if (cnt > weekBestCount) weekBestCount = cnt;
+    }
+  }
+
+  const colHeaders = days.map(d => {
+    const dk = fmtKey(d);
+    const isToday = dk === today;
+    return `<div class="col-header${isToday?' col-today':''}">
+      <div class="col-date" style="${isToday?'color:var(--primary)':''}">${d.getDate()}</div>
+      <div>${DOW_KO[d.getDay()]}</div>
+    </div>`;
+  }).join('');
+
+  let cellRows = '';
+  for (const time of TIMES) {
+    let cells = `<div class="row-header">${time}</div>`;
+    for (const day of days) {
+      const dk = fmtKey(day);
+      const slotKey = dk+'|'+time;
+      const voters = votes.filter(v => v.slots && v.slots[slotKey]).map(v => v.name);
+      const cnt = voters.length;
+      const isMine = voters.includes(myName);
+      const isBest = cnt > 0 && cnt === weekBestCount;
+      const isPast = dk < today;
+      const clsList = ['cell', isMine?'my-yes':'', isBest?'is-best':'', (locked||isPast)?'locked':''].filter(Boolean).join(' ');
+      const cntCap = Math.min(cnt, 6);
+      const onclick = (!locked && !isPast) ? `onclick="toggleSlot('${wid}','${slotKey}')"` : '';
+      cells += `<div class="${clsList}" data-count="${cntCap}" ${onclick}>
+        ${isMine ? `<span class="cell-me">✓</span>` : ''}
+        <span class="cell-count">${cnt > 0 ? cnt : ''}</span>
+        ${voters.length > 0 ? `<span class="cell-names">${esc(voters.join(', '))}</span>` : ''}
+      </div>`;
+    }
+    cellRows += cells;
+  }
+
+  return `
+    <div class="week-section">
+      <div class="week-header">
+        <div>
+          <span class="week-title">${label}</span>
+          <span class="week-date-range" style="margin-left:8px">${displayDateRange(monday)}</span>
+        </div>
+        ${locked ? `<span class="week-locked-badge">🔒 이번 주 월요일부터 오픈</span>` : ''}
+      </div>
+      <div class="grid-wrap">
+        <div class="sched-grid">
+          <div class="grid-corner"></div>
+          ${colHeaders}
+          ${cellRows}
+        </div>
+      </div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-dot" style="background:var(--gray-200)"></span>0명</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#7aeed8"></span>1-2명</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#0099d4"></span>3-4명</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#002fa0"></span>5명+</span>
+        <span class="legend-item" style="margin-left:4px">
+          <span style="border:2px solid var(--primary);border-radius:4px;width:12px;height:12px;display:inline-block"></span>내 투표
+        </span>
+        <span class="legend-item">
+          <span style="border:2px solid var(--gold);border-radius:4px;width:12px;height:12px;display:inline-block;background:var(--gold-light)"></span>최다
+        </span>
+      </div>
+    </div>`;
+}
+
+// ── MAIN ──────────────────────────────────────────────────────
+function renderMain() {
+  const myName = getMyName();
+  const initial = myName.charAt(0).toUpperCase();
+  const thisM = getThisMonday();
+  const nextM = getNextMonday();
+  const nextLocked = new Date() < getThisMonday();
+
+  return `
+    <div class="top-bar">
+      <div class="logo-inline">피클볼 / 배드민턴 🏸</div>
+      <div class="user-badge" onclick="openChangeName()">
+        <div class="avatar">${esc(initial)}</div>
+        ${esc(myName)}
+        <span style="font-size:0.7rem;color:var(--gray-400);margin-left:2px">✏️</span>
+      </div>
+    </div>
+    ${renderBanner()}
+    ${renderWeekSection(thisM, '이번 주', false)}
+    ${renderWeekSection(nextM, '다음 주', nextLocked)}
+  `;
+}
+
+// ── TOGGLE SLOT (Firebase write) ──────────────────────────────
+window.toggleSlot = (wid, slotKey) => {
+  const myName = getMyName();
+  const userKey = sanitizeKey(myName);
+  const userRef = db.ref(`votes/${wid}/${userKey}`);
+
+  userRef.once('value', snap => {
+    const current = snap.val();
+    const currentlyOn = current?.slots?.[slotKey] === true;
+    if (currentlyOn) {
+      // Turn off: remove this slot
+      db.ref(`votes/${wid}/${userKey}/slots/${slotKey}`).remove();
+    } else {
+      // Turn on: set name + slot
+      db.ref().update({
+        [`votes/${wid}/${userKey}/name`]: myName,
+        [`votes/${wid}/${userKey}/slots/${slotKey}`]: true
+      });
+    }
+  });
+};
+
+// ── INIT ──────────────────────────────────────────────────────
+// Subscribe to this week + next week data on load
+subscribeToWeek(weekId(getThisMonday()));
+subscribeToWeek(weekId(getNextMonday()));
+render();
+</script>
+</body>
+</html>
